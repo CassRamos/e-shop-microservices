@@ -16,8 +16,4 @@
             return new GetProductsResult(products);
         }
     }
-
-    public class GetProductHandler
-    {
-    }
 }
