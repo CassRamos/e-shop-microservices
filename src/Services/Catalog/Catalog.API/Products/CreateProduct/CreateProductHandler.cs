@@ -9,12 +9,31 @@
 
     public record CreateProductResult(Guid Id);
 
-    internal class CreateProductCommandHandler(IDocumentSession session) :
+    public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
+    {
+        public CreateProductCommandValidator()
+        {
+            RuleFor(p => p.Name).NotEmpty().WithMessage("Product name is required.");
+            RuleFor(p => p.Category).NotEmpty().WithMessage("At least one category is required.");
+            RuleFor(p => p.ImageFile).NotEmpty().WithMessage("Image file is required.");
+            RuleFor(p => p.Price).GreaterThan(0).WithMessage("Price must be greater than zero.");
+        }
+    }
+
+
+    internal class CreateProductCommandHandler(
+        IDocumentSession session,
+        IValidator<CreateProductCommand> validator) :
         ICommandHandler<CreateProductCommand, CreateProductResult>
     {
         public async Task<CreateProductResult> Handle(CreateProductCommand command, CancellationToken cancellationToken)
         {
-            // business logic to create a product
+            var result = await validator.ValidateAsync(command, cancellationToken);
+            var errors = result.Errors.Select(result => result.ErrorMessage).ToList();
+            if (errors.Any())
+            {
+                throw new ValidationException(errors.FirstOrDefault());
+            }
 
             var product = new Product
             {
